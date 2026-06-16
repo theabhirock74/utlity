@@ -14,7 +14,26 @@ frappe.ui.NotesWidget = class NotesWidget {
         this.render();
     }
 
+	is_doc_saved() {
+		return !this.frm.is_new() && this.frm.doc.name;
+	}
+
 	async render() {
+		const wrapper =
+			this.frm.fields_dict[this.options.html_field]?.$wrapper;
+
+		if (!wrapper) {
+			return;
+		}
+
+		if (!this.is_doc_saved()) {
+			wrapper.html(`
+				<div class="text-center text-muted py-4">
+					${__("Please save the document first to view or add notes.")}
+				</div>
+			`);
+			return;
+		}
 
 		await frappe.model.with_doctype(this.options.notes_doctype);
 
@@ -166,11 +185,6 @@ frappe.ui.NotesWidget = class NotesWidget {
 			`;
 		});
 
-		const wrapper =
-			this.frm.fields_dict[
-				this.options.html_field
-			].$wrapper;
-
 		wrapper.html(html);
 
 		wrapper.find(".add-note-btn").on("click", () => {
@@ -179,6 +193,13 @@ frappe.ui.NotesWidget = class NotesWidget {
 	}
 
 	open_dialog(meta) {
+		if (!this.is_doc_saved()) {
+			frappe.show_alert({
+				message: __("Please save the document first to add notes."),
+				indicator: "orange"
+			});
+			return;
+		}
 
 		const fields = [];
 
