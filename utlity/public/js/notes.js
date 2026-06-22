@@ -41,6 +41,7 @@ frappe.ui.NotesWidget = class NotesWidget {
 			auto_render: true,
 			...options,
 		};
+		frm._notes_widget = this;
 
 		if (this.options.auto_render) {
 			this.render();
@@ -384,14 +385,11 @@ frappe.ui.NotesWidget = class NotesWidget {
 	}
 };
 
+// i want to show where the notes doctype is enabled or not
 frappe.ui.form.on("*", {
 	refresh(frm) {
-		if (!frm.fields_dict.note_html) {
-			return;
-		}
-
+		// Widget not enabled for this doctype
 		if (!frm._notes_widget) {
-			frm._notes_widget = new frappe.ui.NotesWidget(frm);
 			return;
 		}
 
@@ -399,6 +397,11 @@ frappe.ui.form.on("*", {
 	},
 
 	async before_workflow_action(frm) {
+		// Notes widget not enabled
+		if (!frm._notes_widget) {
+			return;
+		}
+
 		if (
 			!frappe.ui.NotesWidget.has_active_workflow(frm.doctype) ||
 			frm.doc.__islocal
@@ -406,14 +409,8 @@ frappe.ui.form.on("*", {
 			return;
 		}
 
-		const widget =
-			frm._notes_widget ||
-			new frappe.ui.NotesWidget(frm, { auto_render: false });
-
-		frm._notes_widget = widget;
-
 		try {
-			await widget.require_note_for_workflow_action();
+			await frm._notes_widget.require_note_for_workflow_action();
 		} catch (e) {
 			frappe.dom.unfreeze();
 			frm.selected_workflow_action = null;
